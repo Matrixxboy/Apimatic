@@ -8,7 +8,16 @@ version = "0.1.0"
 description = "Universal API documentation generator"
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies = []
+authors = [
+    {name = "Matrixxboy", email = "matrix.utsav.lankapati@gmail.com"},
+]
+dependencies = [
+    "pyyaml",
+    "flask",
+    "Django",
+    "express",
+    "fastapi",
+]
 
 [project.scripts]
 Apimatic = "Apimatic.cli:main"

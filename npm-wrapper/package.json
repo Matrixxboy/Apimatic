@@ -5,6 +5,7 @@
 "bin": {
 "Apimatic": "index.js"
 },
-"author": "Your Name",
-"license": "MIT"
+"author": "Matrixxboy",
+"license": "MIT",
+"devDependencies": {}
 }
