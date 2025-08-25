@@ -94,7 +94,7 @@ ________________________________________
   "bin": {
     "Apimatic": "index.js"
   },
-  "author": "Your Name",
+  "author": "Matrixxboy",
   "license": "MIT"
 }
 ```
