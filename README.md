@@ -7,7 +7,6 @@
 [![License](https://img.shields.io/pypi/l/apimatic.svg)](https://github.com/Matrixxboy/Apimatic/blob/main/LICENSE)
 
 
-
 A tool to **automatically generate beautiful and comprehensive API documentation** (Markdown/OpenAPI) from your source code.  
 Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enhancements via Ollama**.  
 
@@ -73,7 +72,30 @@ Apimatic --src ./my_flask_app --framework flask
 Enhance documentation with AI (Ollama model):
 
 ```bash
-Apimatic --src . --use-ollama --model llama3:instruct
+Apimatic --src . --use-ollama --model llama3.2:1b
+```
+
+---
+
+## 🤖 Recommended Ollama Models (1–2 GB)
+
+When using `--use-ollama`, you can choose a local model for API explanations.
+Here are lightweight models that run well (1–2 GB range):
+
+| Model         | Size    | Why Use It                                                                  |
+| ------------- | ------- | --------------------------------------------------------------------------- |
+| `llama3.2:1b` | \~1.3GB | Fast, nimble, and great for generating clear API explanations (recommended) |
+| `gemma2:2b`   | \~1.6GB | Slightly larger, richer outputs, good balance of quality and size           |
+| `dolphin-phi` | \~1.6GB | Alternative small model with solid reasoning ability                        |
+| `orca-mini`   | \~1.9GB | Bigger (3B params) but still under 2GB; more context-aware                  |
+| `moondream2`  | \~0.8GB | Ultra-light, very fast, but less detailed                                   |
+
+👉 **Recommended Default**: `llama3.2:1b` – best speed + clarity tradeoff.
+
+Example:
+
+```bash
+Apimatic --src . --use-ollama --model llama3.2:1b
 ```
 
 ---
