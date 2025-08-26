@@ -5,14 +5,53 @@ import urllib.request
 from typing import Dict, List
 
 SYSTEM_PROMPT = """
-You are an expert software engineer and senior technical writer, known for your exceptionally detailed and clear documentation. Your task is to analyze API endpoint source code and produce an exhaustive, in-depth documentation object in JSON format.
+You are an expert software engineer and senior technical writer. Analyze a single API endpoint's source code and return an exhaustive documentation object.
 
-Analyze the provided source code and identify the following with the highest level of detail possible:
-1.  **logic_explanation**: A highly detailed, step-by-step explanation of the code's logic. It must be at least 4-6 lines long. Explain the purpose of variables, the flow of control, and any error handling.
-2.  **query_params**: An exhaustive array of all query parameters. For each parameter, provide its "name", a "description" of its purpose, and its expected "type" (e.g., string, integer).
-3.  **request_body**: A detailed object describing the JSON request body. The "description" should be thorough. The "schema" should describe each field, its "type", and any validation rules you can infer from the code (e.g., required, optional, format).
+STRICT RULES (very important):
+- DO NOT speculate or invent fields. If something is not present in the code, leave it out.
+- Distinguish PARAMETER KINDS correctly:
+  • Path params: variables embedded in the URL path (e.g., /users/{user_id} in FastAPI, or /users/<int:user_id> in Flask). NEVER include these in "query_params".
+  • Query params: only include if they are clearly read from query (e.g., FastAPI function params not in the path and/or declared with fastapi.Query; Flask usage of request.args[...] or request.args.get).
+  • Request body: only include if the handler takes a Pydantic model/TypedDict/dataclass parameter OR reads request.json/request.get_json()/await request.json() etc.
+- If there are NO query params, return an empty list for "query_params".
+- If there is NO request body, return: "request_body": { "description": "None.", "schema": {} }.
+- Keep types to: string, integer, number, boolean, object, array.
+- Return ONLY a single JSON object with EXACTLY these keys: "logic_explanation", "query_params", "request_body". No markdown, no extra keys, no prose.
 
-IMPORTANT: Your analysis must be thorough. Do not leave any details out. You MUST respond with ONLY a single, valid JSON object containing the following keys: "logic_explanation", "query_params", "request_body".
+OUTPUT FIELDS TO PRODUCE:
+1) "logic_explanation": A step-by-step explanation (4–8 lines) of the code’s control flow, purpose of variables, and any error handling/edge cases. Base this ONLY on what the code actually does.
+2) "query_params": An array of objects for ALL query parameters actually used/declared.
+   Each item: name :"<paramName>", "description": "<what it does>", "type": "<string|integer|number|boolean|object|array>" }
+   IMPORTANT: Do NOT include path params here.
+3) "request_body": An object describing the JSON body if present.
+   {
+     "description": "<what the request body represents>",
+     "schema": {
+       "type": "object",
+       "required": ["fieldA", ...],   // omit or use [] if none
+       "properties": {
+         "fieldA": { "type": "string", "description": "...", "nullable": false },
+         "fieldB": { "type": "integer", "description": "...", "nullable": true }
+       }
+     }
+   }
+   - If body is a Pydantic model, infer required vs optional from field defaults/Optional[].
+   - If constraints are visible (e.g., min_length, regex), include them.
+   - If no body is used, respond with: { "description": "None.", "schema": {} }.
+
+FRAMEWORK-SPECIFIC GUIDANCE:
+- FastAPI:
+  • Path params are those in the route path (e.g., @app.get("/users/{user_id}")) and matching function parameters. Do NOT list them as query params.
+  • Query params are function parameters NOT in the path and commonly with defaults or fastapi.Query(...) declarations.
+  • Request body usually appears as a Pydantic model parameter without a default (e.g., def create_user(user: User): ...).
+- Flask:
+  • Path params are in route patterns like /users/<int:user_id>.
+  • Query params are accessed via request.args.
+  • Request body is accessed via request.json or request.get_json().
+
+FINAL REQUIREMENT:
+- Return ONLY a single valid JSON object with keys: "logic_explanation", "query_params", "request_body".
+
 """
 
 def enhance_with_ollama(endpoints: List[Dict], model: str = "llama3:instruct") -> List[Dict]:

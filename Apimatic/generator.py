@@ -28,13 +28,15 @@ def generate_markdown(endpoints: List[Dict]) -> str:
         api_details = ep.get('ai_details', {})
         
         # 1. Logic Explanation
-        logic_explanation = api_details.get('logic_explanation', '')
-        if logic_explanation:
+        logic_explanation = api_details.get('logic_explanation')
+        if isinstance(logic_explanation, str) and logic_explanation.strip():
             out.append(f"- **Logic Explanation:**\n")
-            # Format multi-line explanation with bullet points
-            lines = logic_explanation.split('\n')
+            lines = logic_explanation.splitlines()
             for line in lines:
-                out.append(f"   - {line}\n")
+                line = line.strip()
+                if line:  # skip empty lines
+                    out.append(f"   - {line}\n")
+
 
         # 2. Source Code
         source = ep.get("source")

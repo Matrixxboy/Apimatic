@@ -1,44 +1,50 @@
-from flask import Flask, jsonify
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
 
-app = Flask(__name__)
+# Create the FastAPI app
+app = FastAPI()
 
-# A simple list to act as a mock database
+# Mock database
 users = [
     {"id": 1, "name": "Alice"},
     {"id": 2, "name": "Bob"},
     {"id": 3, "name": "Charlie"}
 ]
 
+# Pydantic model for request validation
+class User(BaseModel):
+    name: str
+
+
 # Route to get all users
-@app.route('/users', methods=['GET'])
+@app.get("/users", response_model=List[dict])
 def get_users():
-    return jsonify(users)
+    hello = "hello"
+    print(hello)
+    return users
 
-# # Route to get a single user by ID
-# @app.route('/users/<int:user_id>', methods=['GET'])
-# def get_user(user_id):
-#     # Find the user with the matching ID
-#     user = next((item for item in users if item["id"] == user_id), None)
-    
-#     if user:
-#         return jsonify(user)
-#     else:
-#         return jsonify({"error": "User not found"}), 404
 
-# # Route to create a new user (example)
-# @app.route('/users', methods=['POST'])
-# def create_user():
-#     # In a real app, you'd get data from request.json
-#     new_user = {"id": len(users) + 1, "name": "New User"}
-#     users.append(new_user)
-#     return jsonify(new_user), 201
-# @app.route('/bhai', methods=['POST'])
-# def create_user2():
-#     # In a real app, you'd get data from request.json
-#     new_user = {"id": len(users) + 1, "name": "New User"}
-#     users.append(new_user)
-#     return jsonify(new_user), 201
+# Route to get a single user by ID
+@app.get("/users/{user_id}")
+def get_user(user_id: int):
+    user = next((item for item in users if item["id"] == user_id), None)
+    if user:
+        return user
+    raise HTTPException(status_code=404, detail="User not found")
 
-# Run the app
-if __name__ == '__main__':
-    app.run(debug=True)
+
+# Route to create a new user
+@app.post("/users")
+def create_user(user: User):
+    new_user = {"id": len(users) + 1, "name": user.name}
+    users.append(new_user)
+    return new_user
+
+
+# Another POST route (/user2)
+@app.post("/user2")
+def create_user2():
+    new_user = {"id": len(users) + 1, "name": "New User"}
+    users.append(new_user)
+    return new_user
