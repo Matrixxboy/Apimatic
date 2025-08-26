@@ -14,19 +14,19 @@ from Apimatic.ollama import enhance_with_ollama
 def main() -> None:
     p = argparse.ArgumentParser(
         prog="Apimatic",
-        description="Generate API documentation (Markdown/OpenAPI) for popular frameworks.",
+        description="A tool to automatically generate beautiful and comprehensive API documentation (Markdown/OpenAPI) from your source code.",
     )
-    p.add_argument("--src", default=".", help="Project source root (default: .)")
+    p.add_argument("--src", default=".", help="The root directory of the project to scan. (Default: current directory)")
     p.add_argument("--framework", nargs="*", default=None,
-                   help="Force framework(s) (e.g. flask fastapi django express). If omitted, auto-detect.")
+                   help="Force a specific framework (e.g., flask, fastapi). If omitted, it will be auto-detected.")
     p.add_argument("--format", choices=["markdown", "openapi"], default="markdown",
-                   help="Output format: markdown or openapi (default: markdown)")
+                   help="The output format for the documentation. (Default: markdown)")
     p.add_argument("--output", default=None,
-                   help="Output file path. Defaults: API_Docs.md or openapi.yaml in project root.")
+                   help="The full path for the generated output file. (Defaults: API_Docs.md or openapi.yaml)")
     p.add_argument("--use-ollama", action="store_true",
-                   help="Enhance docs with Ollama (requires local ollama model).")
+                   help="Enhance generated documentation with descriptions from a local Ollama model.")
     p.add_argument("--model", default="llama3:instruct",
-                   help="Ollama model name (default: llama3:instruct)")
+                   help="The Ollama model to use for enhancement (e.g., 'llama3:instruct'). Requires --use-ollama.")
 
     args = p.parse_args()
 

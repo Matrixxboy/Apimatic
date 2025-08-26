@@ -13,9 +13,9 @@ authors = [
 ]
 dependencies = [
     "pyyaml",
-    "flask",
-    "Django",
-    "fastapi",
+    "elasticsearch",
+    "httpx",
+    "e",
 ]
 
 [project.scripts]
