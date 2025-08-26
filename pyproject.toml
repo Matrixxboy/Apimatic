@@ -13,20 +13,6 @@ authors = [
 ]
 dependencies = [
     "pyyaml",
-    "elasticsearch",
-    "httpx",
-    "e",
-    "argparse",
-    "typing",
-    "pathlib",
-    "sys",
-    "json",
-    "urllib",
-    "re",
-    "collections",
-    "functools",
-    "itertools",
-    "inspect"
 ]
 
 [project.scripts]
