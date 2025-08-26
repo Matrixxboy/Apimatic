@@ -17,19 +17,21 @@ def parse_fastapi_routes(src: Path) -> List[Dict]:
                     continue
 
                 for decorator in node.decorator_list:
+                    # Look for decorators like @app.get, @app.post, @router.get, etc.
                     if (isinstance(decorator, ast.Call) and
                         isinstance(decorator.func, ast.Attribute) and
                         isinstance(decorator.func.value, ast.Name) and
+                        decorator.func.attr.upper() in ("GET", "POST", "PUT", "DELETE", "PATCH") and
                         decorator.func.value.id in ("app", "router")):
                         
                         method = decorator.func.attr.upper()
-                        if method not in ("GET", "POST", "PUT", "DELETE", "PATCH"):
-                            continue
-
+                        
+                        # Get the path from the first argument of the decorator
                         path = ""
                         if decorator.args and isinstance(decorator.args[0], ast.Constant):
                             path = decorator.args[0].value
                         
+                        # Extract the source code for the decorated function
                         source_code = ast.get_source_segment(text, node)
 
                         endpoints.append({
@@ -41,6 +43,7 @@ def parse_fastapi_routes(src: Path) -> List[Dict]:
                             "summary": f"{method} {path}"
                         })
         except (SyntaxError, UnicodeDecodeError):
+            # Skip files that have syntax errors or are not correctly encoded
             continue
             
     return endpoints
