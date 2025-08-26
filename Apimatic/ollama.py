@@ -1,67 +1,73 @@
 from __future__ import annotations
 import json
-import subprocess
-from typing import Dict, List, Tuple
+import urllib.request
+from typing import Dict, List
 
-SYSTEM_PROMPT = (
-    "You are an expert technical writer. Given raw endpoint data (method, path, framework, file), "
-    "return an enriched JSON array of endpoints. For each endpoint, add 'summary' and 'description'. "
-    "If information is missing, make a sensible, concise placeholder. IMPORTANT: Return ONLY JSON."
-)
+SYSTEM_PROMPT = """
+You are an expert software engineer and senior technical writer, known for your exceptionally detailed and clear documentation. Your task is to analyze API endpoint source code and produce an exhaustive, in-depth documentation object in JSON format.
 
+Analyze the provided source code and identify the following with the highest level of detail possible:
+1.  **logic_explanation**: A highly detailed, step-by-step explanation of the code's logic. It must be at least 5-7 lines long. Explain the purpose of variables, the flow of control, and any error handling.
+2.  **query_params**: An exhaustive array of all query parameters. For each parameter, provide its "name", a "description" of its purpose, and its expected "type" (e.g., string, integer).
+3.  **request_body**: A detailed object describing the JSON request body. The "description" should be thorough. The "schema" should describe each field, its "type", and any validation rules you can infer from the code (e.g., required, optional, format).
+4.  **responses**: A comprehensive array of possible success and error responses. For each, provide the "status_code" and a "description" of what that response signifies and what data it might contain.
 
-def _key(ep: Dict) -> Tuple[str, str]:
-    return (str(ep.get("method", "")).upper(), str(ep.get("path", "")))
-
-
-def _merge(original: List[Dict], enriched: List[Dict]) -> List[Dict]:
-    base = { _key(ep): ep for ep in original }
-    for e in enriched:
-        k = _key(e)
-        if k in base:
-            # Merge summary/description into the original dict, preserve framework/file
-            if e.get("summary"):
-                base[k]["summary"] = e["summary"]
-            if e.get("description"):
-                base[k]["description"] = e["description"]
-    return list(base.values())
-
+IMPORTANT: Your analysis must be thorough. Do not leave any details out. You MUST respond with ONLY a single, valid JSON object containing the following keys: "logic_explanation", "query_params", "request_body", "responses".
+"""
 
 def enhance_with_ollama(endpoints: List[Dict], model: str = "llama3:instruct") -> List[Dict]:
-    payload = {
-        "system": SYSTEM_PROMPT,
-        "user": {
-            "task": "enrich_endpoints",
-            "endpoints": [
-                {"method": ep.get("method"), "path": ep.get("path"), "framework": ep.get("framework"), "file": ep.get("file")}
-                for ep in endpoints
-            ],
-        },
-    }
-    prompt = json.dumps(payload, ensure_ascii=False)
+    for i, endpoint in enumerate(endpoints):
+        source = endpoint.get("source")
+        if not source:
+            endpoint["description"] = "_No source code found to generate a description._"
+            endpoint["query_params"] = []
+            endpoint["request_body"] = {}
+            endpoint["responses"] = []
+            continue
 
-    try:
-        proc = subprocess.run(
-            ["ollama", "run", model],
-            input=prompt.encode("utf-8"),
-            capture_output=True,
-            check=False,
-        )
-        text = (proc.stdout or b"").decode("utf-8", errors="ignore").strip()
-    except FileNotFoundError:
-        # ollama not installed; return original
-        return endpoints
+        print(f"🤖 Analyzing {endpoint.get('summary', 'endpoint')}... ({i+1}/{len(endpoints)})")
 
-    # Extract first JSON array from output
-    start = text.find("[")
-    end = text.rfind("]")
-    if start == -1 or end == -1 or end <= start:
-        return endpoints
+        user_prompt = f"Here is the API endpoint source code:\n\n{source}"
 
-    try:
-        enriched = json.loads(text[start:end+1])
-        if isinstance(enriched, list):
-            return _merge(endpoints, enriched)
-    except Exception:
-        pass
+        payload = {
+            "model": model,
+            "system": SYSTEM_PROMPT,
+            "prompt": user_prompt,
+            "stream": False,
+            "format": "json",
+        }
+        payload_json = json.dumps(payload).encode("utf-8")
+
+        try:
+            req = urllib.request.Request(
+                "http://localhost:11434/api/generate",
+                data=payload_json,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req) as response:
+                if response.status == 200:
+                    response_text = response.read().decode("utf-8")
+                    api_details = json.loads(json.loads(response_text).get("response"))
+                    
+                    endpoint["description"] = api_details.get("logic_explanation", "")
+                    endpoint["query_params"] = api_details.get("query_params", [])
+                    endpoint["request_body"] = api_details.get("request_body", {})
+                    endpoint["responses"] = api_details.get("responses", [])
+                else:
+                    raise RuntimeError(f"API request failed with status {response.status}: {response.read().decode('utf-8')}")
+
+        except Exception as e:
+            print(f"\n⚠️  An error occurred while analyzing {endpoint.get('summary')}.")
+            print(f"    Error: {e}")
+            endpoint["description"] = f"_Ollama analysis failed: {e}_"
+            endpoint["query_params"] = []
+            endpoint["request_body"] = {}
+            endpoint["responses"] = []
+            if isinstance(e, (urllib.error.URLError, ConnectionRefusedError)):
+                print("    Could not connect to Ollama. Aborting analysis.")
+                return endpoints
+            continue
+
+    print("✅ AI analysis complete.")
     return endpoints

@@ -1,23 +1,46 @@
 from __future__ import annotations
-import re
+import ast
 from pathlib import Path
 from typing import List, Dict
 
 from Apimatic.utils import iter_files
 
-ROUTE = re.compile(r"@(app|router)\.(get|post|put|delete|patch)\(['\"]([^'\"]+)['\"]\)")
-
 def parse_fastapi_routes(src: Path) -> List[Dict]:
     endpoints: List[Dict] = []
     for file in iter_files(src, exts=(".py",)):
-        text = file.read_text(encoding="utf-8", errors="ignore")
-        for m in ROUTE.finditer(text):
-            method = m.group(1).upper()
-            path = m.group(2)
-            endpoints.append({
-                "framework": "fastapi",
-                "file": str(file.relative_to(src)),
-                "method": method,
-                "path": path,
-            })
+        try:
+            text = file.read_text(encoding="utf-8", errors="ignore")
+            tree = ast.parse(text)
+            
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.FunctionDef):
+                    continue
+
+                for decorator in node.decorator_list:
+                    if (isinstance(decorator, ast.Call) and
+                        isinstance(decorator.func, ast.Attribute) and
+                        isinstance(decorator.func.value, ast.Name) and
+                        decorator.func.value.id in ("app", "router")):
+                        
+                        method = decorator.func.attr.upper()
+                        if method not in ("GET", "POST", "PUT", "DELETE", "PATCH"):
+                            continue
+
+                        path = ""
+                        if decorator.args and isinstance(decorator.args[0], ast.Constant):
+                            path = decorator.args[0].value
+                        
+                        source_code = ast.get_source_segment(text, node)
+
+                        endpoints.append({
+                            "framework": "fastapi",
+                            "file": str(file.relative_to(src)),
+                            "method": method,
+                            "path": path,
+                            "source": source_code,
+                            "summary": f"{method} {path}"
+                        })
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+            
     return endpoints
