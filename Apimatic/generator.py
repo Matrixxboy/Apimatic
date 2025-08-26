@@ -8,7 +8,7 @@ def generate_markdown(endpoints: List[Dict]) -> str:
     from a list of endpoint dictionaries.
     """
     # Sort by framework first for logical grouping, then by path+method
-    endpoints = sorted(endpoints, key=lambda x: (x.get("framework", "other"), x.get("path", ""), x.get("method", "")))
+    endpoints.sort(key=lambda x: (x.get("framework", "other"), x.get("path", ""), x.get("method", "")))
     
     out = ["# API Documentation\n"]
     current_group = None
@@ -24,48 +24,46 @@ def generate_markdown(endpoints: List[Dict]) -> str:
         out.append(f"- **Endpoint:** `{ep.get('method','ANY')} {ep.get('path','/')}`\n")
         out.append(f"- **Source File:** `{ep.get('file','?')}`\n")
 
-        description = ep.get('description', '').strip()
-        if description:
-            # Reformat the multi-line description for better Markdown output
-            out.append(f"- **Logic Explanation:**\n")
-            out.append(f"{description}\n")
+        # Extract and format data from the JSON object returned by Ollama
+        api_details = ep.get('ai_details', {})
         
+        # 1. Logic Explanation
+        logic_explanation = api_details.get('logic_explanation', '')
+        if logic_explanation:
+            out.append(f"- **Logic Explanation:**\n")
+            # Format multi-line explanation with bullet points
+            lines = logic_explanation.split('\n')
+            for line in lines:
+                out.append(f"   - {line}\n")
+
+        # 2. Source Code
         source = ep.get("source")
         if source:
             lang = "javascript" if ep.get("framework") == "express" else "python"
             out.append("- **Source Code:**\n")
-            # Corrected the f-string syntax error here
-            out.append(f'  ```{lang}\n{source.strip()}\n  ```\n')
+            out.append(f'```{lang}\n{source.strip()}\n```\n')
 
-        query_params = ep.get("query_params", [])
+        # 3. Query Params
+        query_params = api_details.get("query_params", [])
         out.append("- **Query Params:**\n")
         if query_params:
-            out.append("  | Name | Description |\n")
-            out.append("  |------|-------------|\n")
+            out.append("\n")
+            out.append("| Name | Description | Type |\n")
+            out.append("|------|-------------|------|\n")
             for param in query_params:
-                out.append(f"  | `{param.get('name', '')}` | {param.get('description', '')} |\n")
+                out.append(f"| `{param.get('name', '')}` | {param.get('description', '')} | {param.get('type', '')} |\n")
         else:
             out.append("  _None_\n")
 
-        request_body = ep.get("request_body", {})
+        # 4. Request Body
+        request_body = api_details.get("request_body", {})
         out.append("- **Request Body:**\n")
-        if request_body and (request_body.get("schema") or request_body.get("description")):
+        if request_body:
             if request_body.get("description"):
                 out.append(f"  {request_body['description']}\n")
             if request_body.get("schema"):
                 schema_json = json.dumps(request_body.get("schema", {}), indent=2)
-                out.append(f'  ```json\n{schema_json}\n  ```\n')
+                out.append(f'```json\n{schema_json}\n  ```\n')
         else:
-            out.append("  _None_\n")
-
-        responses = ep.get("responses", [])
-        out.append("- **Responses:**\n")
-        if responses:
-            for resp in responses:
-                out.append(f"  - **`{resp.get('status_code', '???')}`**: {resp.get('description', '')}\n")
-        else:
-            out.append("  _None_\n")
-            
-        out.append("\n")
-        
+            out.append("  _None_\n")        
     return "".join(out)
