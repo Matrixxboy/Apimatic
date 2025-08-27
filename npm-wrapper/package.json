@@ -1,11 +1,17 @@
 {
-"name": "Apimatic",
-"version": "0.1.0",
-"description": "Node CLI wrapper for Apimatic (Python)",
-"bin": {
-"Apimatic": "index.js"
-},
-"author": "Matrixxboy",
-"license": "MIT",
-"devDependencies": {}
+  "name": "apimatic-cli",
+  "version": "0.1.4",
+  "description": "Node CLI wrapper for Apimatic (Python)",
+  "bin": {
+    "apimatic": "index.js"
+  },
+  "keywords": [
+    "api",
+    "documentation",
+    "python",
+    "cli",
+    "wrapper"
+  ],
+  "author": "Matrixxboy",
+  "license": "MIT"
 }
