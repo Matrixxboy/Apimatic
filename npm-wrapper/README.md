@@ -1,36 +1,84 @@
-# Apimatic 🚀  
+# Apimatic CLI 🚀  
 
 [![Matrixxboy](https://img.shields.io/badge/github-Matrixxboy-purple.svg)](https://github.com/Matrixxboy)
-[![PyPI version](https://badge.fury.io/py/Apimatic.svg)](https://pypi.org/project/Apimatic/)
-[![Downloads](https://static.pepy.tech/badge/Apimatic)](https://pepy.tech/project/Apimatic)
-[![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-blue)](https://pypi.org/project/Apimatic/)
-[![License](https://img.shields.io/pypi/l/Apimatic.svg)](https://github.com/Matrixxboy/Apimatic/blob/main/LICENSE)
+[![npm version](https://badge.fury.io/js/Apimatic-cli.svg)](https://www.npmjs.com/package/Apimatic-cli)
+[![npm downloads](https://img.shields.io/npm/dt/Apimatic-cli.svg)](https://www.npmjs.com/package/Apimatic-cli)
+[![License](https://img.shields.io/npm/l/Apimatic-cli.svg)](https://github.com/Matrixxboy/Apimatic-cli/blob/main/LICENSE)
 
-
-A tool to **automatically generate beautiful and comprehensive API documentation** (Markdown/OpenAPI) from your source code.  
-Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enhancements via Ollama**.  
+A **Node.js CLI wrapper** for the [Apimatic Python package](https://pypi.org/project/Apimatic/).  
+It allows you to run Apimatic commands directly from Node / npm while leveraging the underlying Python engine.  
 
 ---
 
-## 📦 Installation
+Here’s a **cleaned-up and more beginner-friendly version** of your installation guide:
+
+---
+
+## 📦 Installation Guide
+
+### 1️⃣ Install the CLI (NPM)
 
 ```bash
+# Install globally via npm
+npm install -g apimatic-cli
+```
+
+### 2️⃣ Install the Python Package (PyPI)
+
+```bash
+# Install globally via pip
 pip install Apimatic
-````
+```
 
-Upgrade to the latest version:
+⚠️ **Note:**
+
+* This CLI is just an NPM wrapper around the Python package.
+* You **must install both** for it to work correctly.
+
+---
+
+## ✅ Verify Installation
 
 ```bash
+# Check if apimatic-cli is installed globally
+npm list -g --depth=0
+
+# Check if Apimatic is installed globally in Python (avoid virtualenvs)
+pip list
+```
+
+You should see both **`apimatic-cli`** (npm) and **`Apimatic`** (pip) listed.
+
+---
+
+## 🔄 Upgrade to Latest Version
+
+```bash
+# Update the npm wrapper
+npm update -g apimatic-cli
+
+# Upgrade the Python package
 pip install --upgrade Apimatic
 ```
 
 ---
 
+Would you like me to also make a **diagram/flowchart image** showing how `apimatic-cli (npm)` just calls `Apimatic (Python)` so users instantly understand the relationship?
+
+---
+
 ## ⚡ Usage
 
+Once installed, you can run:
+
 ```bash
-Apimatic [-h] [--src SRC] [--framework [FRAMEWORK ...]] [--format {markdown,openapi}] 
-         [--output OUTPUT] [--use-ollama] [--model MODEL]
+Apimatic [options]
+```
+
+This internally calls:
+
+```bash
+python3 -m Apimatic.cli [options]
 ```
 
 ---
@@ -51,7 +99,7 @@ Apimatic [-h] [--src SRC] [--framework [FRAMEWORK ...]] [--format {markdown,open
 
 ## 📝 Examples
 
-Generate Markdown docs from the current project:
+Generate Markdown docs:
 
 ```bash
 Apimatic --src . --format markdown --output API_Docs.md
@@ -69,7 +117,7 @@ Force framework detection (Flask):
 Apimatic --src ./my_flask_app --framework flask
 ```
 
-Enhance documentation with AI (Ollama model):
+Enhance docs with AI (Ollama):
 
 ```bash
 Apimatic --src . --use-ollama --model llama3.2:1b
@@ -79,8 +127,7 @@ Apimatic --src . --use-ollama --model llama3.2:1b
 
 ## 🤖 Recommended Ollama Models (1–2 GB)
 
-When using `--use-ollama`, you can choose a local model for API explanations.
-Here are lightweight models that run well (1–2 GB range):
+When using `--use-ollama`, you can choose a local model for API explanations:
 
 | Model         | Size    | Why Use It                                                                  |
 | ------------- | ------- | --------------------------------------------------------------------------- |
@@ -90,13 +137,19 @@ Here are lightweight models that run well (1–2 GB range):
 | `orca-mini`   | \~1.9GB | Bigger (3B params) but still under 2GB; more context-aware                  |
 | `moondream2`  | \~0.8GB | Ultra-light, very fast, but less detailed                                   |
 
-👉 **Recommended Default**: `llama3.2:1b` – best speed + clarity tradeoff.
+👉 **Recommended Default**: `llama3.2:1b`
 
-Example:
+---
 
-```bash
-Apimatic --src . --use-ollama --model llama3.2:1b
-```
+## ⚙ Requirements
+
+* **Node.js** (v16+ recommended)
+* **Python 3.9+** installed and available as `python` or `python3`
+* **Apimatic Python package** installed:
+
+  ```bash
+  pip install Apimatic
+  ```
 
 ---
 
@@ -109,3 +162,14 @@ Contributions are welcome! Please fork the repo, make your changes, and submit a
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+
+
+---
+
+✨ This version is tailored for **npm users**, with:
+- npm badges instead of PyPI  
+- `npm install -g Apimatic-cli` instructions  
+- Keeps the **same CLI usage table** so both pip & npm users get consistent docs  
+
+---

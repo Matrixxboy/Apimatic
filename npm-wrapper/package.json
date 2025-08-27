@@ -1,9 +1,9 @@
 {
   "name": "apimatic-cli",
-  "version": "0.1.4",
+  "version": "0.1.6",
   "description": "Node CLI wrapper for Apimatic (Python)",
   "bin": {
-    "apimatic": "index.js"
+    "Apimatic": "index.js"
   },
   "keywords": [
     "api",
@@ -13,5 +13,8 @@
     "wrapper"
   ],
   "author": "Matrixxboy",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0"
+  }
 }
