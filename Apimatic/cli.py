@@ -16,29 +16,29 @@ def handle_generation(args: argparse.Namespace) -> None:
     """Handles the 'generate' command."""
     src = Path(args.src).resolve()
     if not src.exists():
-        print(f"❌ Source path not found: {src}")
+        print(f"[ERROR] Source path not found: {src}")
         sys.exit(2)
 
     frameworks: List[str] = args.framework or autodetect_frameworks(src)
     if not frameworks:
-        print("⚠️ No framework detected. You can force one with --framework <name>.")
+        print("[WARNING] No framework detected. You can force one with --framework <name>.")
         sys.exit(1)
 
-    print(f"🔎 Framework(s): {', '.join(frameworks)}")
+    print(f"[INFO] Framework(s): {', '.join(frameworks)}")
 
     endpoints: List[Dict] = []
     for fw in frameworks:
         parser_fn = get_parser(fw)
         if not parser_fn:
-            print(f"⚠️ Parser not available for: {fw}")
+            print(f"[WARNING] Parser not available for: {fw}")
             continue
         found = parser_fn(src)
         if found:
-            print(f"• {fw}: {len(found)} endpoints")
+            print(f"* {fw}: {len(found)} endpoints")
             endpoints.extend(found)
 
     if not endpoints:
-        print("⚠️ No endpoints found.")
+        print("[WARNING] No endpoints found.")
         sys.exit(0)
 
     # LLM enhancements
@@ -46,14 +46,14 @@ def handle_generation(args: argparse.Namespace) -> None:
         try:
             endpoints = enhance_with_ollama(endpoints, model=args.ollama_model)
         except Exception as e:
-            print(f"⚠️ Ollama enhancement failed: {e}")
+            print(f"[WARNING] Ollama enhancement failed: {e}")
             print("   Guidance: Ensure Ollama is running and the specified model is installed.")
 
     if args.use_openai:
         try:
             endpoints = enhance_with_openai(endpoints, model=args.openai_model)
         except Exception as e:
-            print(f"⚠️ OpenAI enhancement failed: {e}")
+            print(f"[WARNING] OpenAI enhancement failed: {e}")
             print("   Guidance: Check your internet connection and API key.")
             print("   You can set your key with: apimatic config --set-openai-key YOUR_KEY")
 
@@ -61,7 +61,7 @@ def handle_generation(args: argparse.Namespace) -> None:
         try:
             endpoints = enhance_with_gemini(endpoints, model_name=args.google_gemini_model)
         except Exception as e:
-            print(f"⚠️ Google Gemini enhancement failed: {e}")
+            print(f"[WARNING] Google Gemini enhancement failed: {e}")
             print("   Guidance: Check your internet connection and API key.")
             print("   You can set your key with: apimatic config --set-gemini-key YOUR_KEY")
 
@@ -69,7 +69,7 @@ def handle_generation(args: argparse.Namespace) -> None:
         try:
             endpoints = enhance_with_groq(endpoints, model=args.groq_model)
         except Exception as e:
-            print(f"⚠️ Groq enhancement failed: {e}")
+            print(f"[WARNING] Groq enhancement failed: {e}")
             print("   Guidance: Check your internet connection and API key.")
             print("   You can set your key with: apimatic config --set-groq-key YOUR_KEY")
 
@@ -79,9 +79,9 @@ def handle_generation(args: argparse.Namespace) -> None:
             content = generate_markdown(endpoints)
             out = Path(args.output or src / "API_Docs.md")
             out.write_text(content, encoding="utf-8")
-            print(f"✅ Wrote Markdown: {out}")
+            print(f"[SUCCESS] Wrote Markdown: {out}")
         except Exception as e:
-            print(f"⚠️ Markdown generation failed: {e}")
+            print(f"[WARNING] Markdown generation failed: {e}")
 
 def handle_config(args: argparse.Namespace) -> None:
     """Handles the 'config' command."""

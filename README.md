@@ -15,6 +15,7 @@ Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enha
 ## 📦 Installation
 
 ```bash
+# Run this in your global environment
 pip install Apimatic
 ```
 

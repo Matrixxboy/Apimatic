@@ -1,20 +1,53 @@
 {
   "name": "apimatic-cli",
   "version": "0.1.7",
-  "description": "Node CLI wrapper for Apimatic (Python)",
-  "bin": {
-    "Apimatic": "index.js"
-  },
+  "description": "A Node.js CLI wrapper for Apimatic (Python) that auto-generates beautiful API documentation.",
+  "private": false,
   "keywords": [
     "api",
     "documentation",
-    "python",
     "cli",
-    "wrapper"
+    "wrapper",
+    "openapi",
+    "markdown",
+    "generator",
+    "docs",
+    "api-docs",
+    "flask",
+    "fastapi",
+    "python"
   ],
-  "author": "Matrixxboy",
+  "homepage": "https://github.com/Matrixxboy/Apimatic#readme",
+  "bugs": {
+    "url": "https://github.com/Matrixxboy/Apimatic/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Matrixxboy/Apimatic.git"
+  },
   "license": "MIT",
+  "author": {
+    "name": "Utsav Lankapati (Matrixxboy)",
+    "email": "matrix.utsav.lankapati@gmail.com",
+    "url": "https://github.com/Matrixxboy"
+  },
+  "type": "commonjs",
+  "main": "index.js",
+  "bin": {
+    "apimatic": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "files": [
+    "index.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
-    "express": "^5.1.0"
+    "apimatic-cli": "^0.1.7"
   }
 }
