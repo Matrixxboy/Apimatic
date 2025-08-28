@@ -1,37 +1,36 @@
-name: Generate API Docs
+name: Generate and Commit API Docs
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
 
 jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
-      
-      - name: Install autodoc-gen
-        run: pip install .
-        
-      - name: Generate Markdown
+          python-version: "3.x"
+
+      - name: Install dependencies and package
         run: |
-          autodoc-gen --src . --format markdown --output API_Docs.md || true
-          
-      - name: Generate OpenAPI
+          python -m pip install --upgrade pip
+          pip install .
+
+      - name: Generate API Documentation
         run: |
-          python -c "import yaml" 2>/dev/null || pip install pyyaml
-          autodoc-gen --src . --format openapi --output openapi.yaml || true
-          
-      - name: Commit changes
-        run: |
-          git config user.name "github-actions"
-          git config user.email "actions@github.com"
-          git add API_Docs.md openapi.yaml || true
-          git diff --cached --quiet && echo "No changes" || git commit -m "chore(docs): update API docs [auto]"
-          git push || true
+          # This command generates the documentation.
+          # You can add AI enhancement flags here, for example:
+          # Apimatic generate --src . --use-openai --openai-model gpt-4o-mini
+          Apimatic generate --src . --output API_Docs.md
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: Update generated API documentation"
+          file_pattern: API_Docs.md
