@@ -8,7 +8,7 @@
 
 
 A tool to **automatically generate beautiful and comprehensive API documentation** (Markdown/OpenAPI) from your source code.  
-Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enhancements via Ollama**.  
+Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enhancements via Ollama, OpenAI, Google Gemini, and Groq**.  
 
 ---
 
@@ -16,7 +16,7 @@ Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enha
 
 ```bash
 pip install Apimatic
-````
+```
 
 Upgrade to the latest version:
 
@@ -28,75 +28,103 @@ pip install --upgrade Apimatic
 
 ## ⚡ Usage
 
+Apimatic now uses commands to separate actions.
+
+**1. Generate Documentation:**
 ```bash
-Apimatic [-h] [--src SRC] [--framework [FRAMEWORK ...]] [--format {markdown,openapi}] 
-         [--output OUTPUT] [--use-ollama] [--model MODEL]
+apimatic generate [OPTIONS]
+```
+
+**2. Configure API Keys:**
+```bash
+apimatic config [OPTIONS]
 ```
 
 ---
 
-## 🔑 Options
+## 🔑 Configuration
 
-| Option                        | Description                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------- |
-| `-h, --help`                  | Show help message and exit                                                       |
-| `--src SRC`                   | Root directory of the project to scan (Default: current directory)               |
+To use AI enhancements from providers like OpenAI, Google Gemini, or Groq, you must set an API key.
+
+```bash
+# Set your OpenAI API key
+apimatic config --set-openai-key YOUR_API_KEY
+
+# Set your Google Gemini API key
+apimatic config --set-gemini-key YOUR_API_KEY
+
+# Set your Groq API key
+apimatic config --set-groq-key YOUR_API_KEY
+```
+The key will be stored securely in your home directory.
+
+---
+
+## ⚙️ Generation Options
+
+| Option | Description |
+| --- | --- |
+| `-h, --help` | Show help message and exit |
+| `--src SRC` | Root directory of the project to scan (Default: current directory) |
 | `--framework [FRAMEWORK ...]` | Force a specific framework (`flask`, `fastapi`, etc.). If omitted, auto-detected |
-| `--format {markdown,openapi}` | Output format (`markdown` or `openapi`) – Default: `markdown`                    |
-| `--output OUTPUT`             | Path for the generated output file (Default: `API_Docs.md` or `openapi.yaml`)    |
-| `--use-ollama`                | Enhance generated docs with descriptions from a local Ollama model               |
-| `--model MODEL`               | Ollama model for enhancement (e.g., `llama3:instruct`). Requires `--use-ollama`  |
+| `--format {markdown}` | Output format (Default: `markdown`) |
+| `--output OUTPUT` | Path for the generated output file (Default: `API_Docs.md`) |
+| `--use-ollama` | Enhance with a local Ollama model |
+| `--ollama-model MODEL` | Ollama model to use (e.g., `phi3:mini`) |
+| `--use-openai` | Enhance with an OpenAI model |
+| `--openai-model MODEL` | OpenAI model to use (e.g., `gpt-4o-mini`) |
+| `--use-google-gemini` | Enhance with a Google Gemini model |
+| `--google-gemini-model MODEL` | Gemini model to use (e.g., `gemini-1.5-flash`) |
+| `--use-groq` | Enhance with a Groq model |
+| `--groq-model MODEL` | Groq model to use (e.g., `llama3-8b-8192`) |
 
 ---
 
 ## 📝 Examples
 
-Generate Markdown docs from the current project:
-
+**Basic Generation:**
 ```bash
-Apimatic --src . --format markdown --output API_Docs.md
+# Generate Markdown docs from the current project
+apimatic generate --src . --output API_Docs.md
 ```
 
-Generate OpenAPI spec:
-
+**Force Framework:**
 ```bash
-Apimatic --src . --format openapi --output openapi.yaml
+# Force detection for a Flask app
+apimatic generate --src ./my_flask_app --framework flask
 ```
 
-Force framework detection (Flask):
+**AI-Enhanced Documentation:**
 
+First, set your key:
 ```bash
-Apimatic --src ./my_flask_app --framework flask
+apimatic config --set-openai-key sk-xxxxxxxx
 ```
-
-Enhance documentation with AI (Ollama model):
-
+Then, generate with enhancement:
 ```bash
-Apimatic --src . --use-ollama --model llama3.2:1b
+# Use OpenAI's gpt-4o-mini model
+apimatic generate --src . --use-openai --openai-model gpt-4o-mini
+
+# Use Google Gemini
+apimatic generate --src . --use-google-gemini
+
+# Use Groq's fast Mixtral model
+apimatic generate --src . --use-groq
+
+# Use a local Ollama model
+apimatic generate --src . --use-ollama --ollama-model phi3:mini
 ```
 
 ---
 
-## 🤖 Recommended Ollama Models (1–2 GB)
+## 🤖 Recommended AI Models
 
-When using `--use-ollama`, you can choose a local model for API explanations.
-Here are lightweight models that run well (1–2 GB range):
-
-| Model         | Size    | Why Use It                                                                  |
-| ------------- | ------- | --------------------------------------------------------------------------- |
-| `llama3.2:1b` | \~1.3GB | Fast, nimble, and great for generating clear API explanations (recommended) |
-| `gemma2:2b`   | \~1.6GB | Slightly larger, richer outputs, good balance of quality and size           |
-| `dolphin-phi` | \~1.6GB | Alternative small model with solid reasoning ability                        |
-| `orca-mini`   | \~1.9GB | Bigger (3B params) but still under 2GB; more context-aware                  |
-| `moondream2`  | \~0.8GB | Ultra-light, very fast, but less detailed                                   |
-
-👉 **Recommended Default**: `llama3.2:1b` – best speed + clarity tradeoff.
-
-Example:
-
-```bash
-Apimatic --src . --use-ollama --model llama3.2:1b
-```
+| Provider | Recommended Model | Notes |
+| --- | --- | --- |
+| **Ollama (Local)** | `phi3:mini`, `llama3:8b` | Fast, free, and runs on your machine. Great for privacy. |
+| **OpenAI** | `gpt-4o-mini` | Excellent balance of cost, speed, and intelligence. |
+| **Google Gemini** | `gemini-1.5-flash-001` | Fast and cost-effective model from Google. |
+| **Groq** | `llama3-8b-8192` | Incredibly fast inference speeds. |
 
 ---
 
