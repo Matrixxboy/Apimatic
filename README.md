@@ -5,6 +5,14 @@
 [![Downloads](https://static.pepy.tech/badge/Apimatic)](https://pepy.tech/project/Apimatic)
 [![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-blue)](https://pypi.org/project/Apimatic/)
 [![License](https://img.shields.io/pypi/l/Apimatic.svg)](https://github.com/Matrixxboy/Apimatic/blob/main/LICENSE)
+<!-- PyPI Card -->
+<a href="https://pypi.org/project/Apimatic/" target="_blank">
+  <img src="https://img.shields.io/pypi/v/Apimatic?color=3775A9&logo=python&label=Apimatic&style=for-the-badge" alt="pypi version" />
+</a>
+<!-- NPM Card -->
+<a href="https://www.npmjs.com/package/apimatic-cli" target="_blank">
+  <img src="https://img.shields.io/npm/v/apimatic-cli?color=CB3837&logo=npm&label=apimatic-cli&style=for-the-badge" alt="npm version" />
+</a>
 
 
 A tool to **automatically generate beautiful and comprehensive API documentation** (Markdown/OpenAPI) from your source code.  
