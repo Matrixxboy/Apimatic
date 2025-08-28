@@ -113,7 +113,7 @@ def main() -> None:
     gen_p.add_argument("--use-openai", action="store_true", help="Enhance with OpenAI.")
     gen_p.add_argument("--openai-model", default="gpt-4o-mini", help="OpenAI model to use.")
     gen_p.add_argument("--use-google-gemini", action="store_true", help="Enhance with Google Gemini.")
-    gen_p.add_argument("--google-gemini-model", default="gemini-1.5-flash-001", help="Google Gemini model.")
+    gen_p.add_argument("--google-gemini-model", default="gemini-1.5-flash", help="Google Gemini model.")
     gen_p.add_argument("--use-groq", action="store_true", help="Enhance with Groq.")
     gen_p.add_argument("--groq-model", default="llama3-8b-8192", help="Groq model to use.")
     gen_p.set_defaults(func=handle_generation)

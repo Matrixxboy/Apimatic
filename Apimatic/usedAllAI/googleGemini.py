@@ -6,36 +6,42 @@ from pathlib import Path
 import google.generativeai as genai
 import google.ai.generativelanguage as glm # for the API response objects
 
-# -------- CONFIGURATION --------
 API_FILE = Path.home() / ".gemini_api_key"
-DEFAULT_MODEL = "gemini-1.5-flash-001"
+DEFAULT_MODEL = "gemini-1.5-flash"
 
 SYSTEM_PROMPT = """
-You are an expert software engineer and senior technical writer. Analyze a single API endpoint's source code and return an exhaustive documentation object.
+You are an expert software engineer and senior technical writer. Your task is to analyze the source code for a single API endpoint and generate a documentation object in JSON format.
 
-STRICT RULES (very important):
-- DO NOT speculate or invent fields. If something is not present in the code, leave it out.
-- Distinguish PARAMETER KINDS correctly:
-  • Path params: variables embedded in the URL path (e.g., /users/{user_id} in FastAPI, or /users/<int:user_id> in Flask). NEVER include these in "query_params".
-  • Query params: only include if they are clearly read from query (e.g., FastAPI function params not in the path and/or declared with fastapi.Query; Flask usage of request.args[...] or request.args.get).
-  • Request body: only include if the handler takes a Pydantic model/TypedDict/dataclass parameter OR reads request.json/request.get_json()/await request.json() etc.
-- If there are NO query params, return an empty list for "query_params".
-- If there is NO request body, return: "request_body": { "description": "None.", "schema": {} }.
-- Keep types to: string, integer, number, boolean, object, array.
-- Return ONLY a single JSON object with EXACTLY these keys: "logic_explanation", "query_params", "request_body". No markdown, no extra keys, no prose.
+### STRICT RULES (VERY IMPORTANT)
 
-OUTPUT FIELDS TO PRODUCE:
-1) "logic_explanation": A step-by-step explanation (4–8 lines) of the code’s control flow, purpose of variables, and any error handling/edge cases. Base this ONLY on what the code actually does.
-2) "query_params": An array of objects for ALL query parameters actually used/declared.
-3) "request_body": An object describing the JSON body if present.
-   - If no body is used, respond with: { "description": "None.", "schema": {} }.
+1.  **Analyze, Don't Speculate:** Base your output *only* on the provided source code. Do not invent or assume functionality that isn't explicitly present.
+2.  **Accurate Parameter Detection:**
+    *   **Path Parameters:** Identify variables embedded in the URL path (e.g., `/users/{user_id}`).
+    *   **Query Parameters:** Identify parameters read from the URL query string (e.g., `request.args` in Flask, or FastAPI function arguments that are not part of the path).
+    *   **Request Body:** Identify data read from the request body (e.g., from a Pydantic model or `request.json`).
+3.  **JSON Output Only:** Return *only* a single, valid JSON object. Do not include any other text, markdown, or explanations outside of the JSON structure.
+4.  **Field Correctness:**
+    *   If there are no query parameters, the `query_params` field must be an empty array (`[]`).
+    *   If there is no request body, the `request_body` field must be `{"description": "None.", "schema": {}}`.
 
-FRAMEWORK-SPECIFIC GUIDANCE:
-- FastAPI: Path params = in route path. Query params = function params NOT in path. Request body = Pydantic model param.
-- Flask: Path params = in route patterns. Query params = request.args. Request body = request.json / request.get_json().
+### OUTPUT STRUCTURE
 
-FINAL REQUIREMENT:
-- Return ONLY a single valid JSON object with keys: "logic_explanation", "query_params", "request_body".
+Your JSON output must have the following keys:
+
+1.  `"logic_explanation"`: **(High-Quality Explanation)**
+    *   Provide a concise, step-by-step summary of the endpoint's business logic.
+    *   Focus on the **"how" and "why"**: What is the endpoint's purpose? How does it achieve it?
+    *   Explain the data flow: Where does data come from (e.g., database, external API)? How is it processed or transformed?
+    *   Mention any key validation, error handling, or security measures.
+    *   Write in clear, active voice. Aim for 4-6 impactful sentences.
+
+2.  `"query_params"`: An array of objects, where each object represents a query parameter and has the keys: `name`, `type`, and `description`.
+
+3.  `"request_body"`: An object describing the JSON request body, containing the keys: `description` and `schema`.
+
+### FINAL REQUIREMENT
+
+- Return ONLY a single valid JSON object with the keys: `"logic_explanation"`, `"query_params"`, and `"request_body"`.
 """
 
 # -------- API KEY HANDLING --------
@@ -56,9 +62,11 @@ def update_api_key(new_key: str) -> None:
 # -------- MAIN FUNCTION --------
 def enhance_with_gemini(endpoints: List[Dict], model_name: str = DEFAULT_MODEL) -> List[Dict]:
     """Enhances each endpoint with an AI-generated explanation using Gemini API."""
-    # Use the client's built-in key management
     api_key = get_api_key()
-    os.environ["GEMINI_API_KEY"] = api_key
+    if not api_key:
+        raise ValueError("Gemini API key not found. Please set it using 'apimatic config --set-gemini-key YOUR_KEY'")
+
+    genai.configure(api_key=api_key)
    
     model = genai.GenerativeModel(model_name)
 

@@ -5,6 +5,7 @@ from typing import Dict, List
 from pathlib import Path
 from groq import Groq
 
+
 # -------- CONFIGURATION --------
 API_FILE = Path.home() / ".groq_api_key"
 DEFAULT_MODEL = "llama3-8b-8192"

@@ -123,7 +123,7 @@ apimatic generate --src . --use-ollama --ollama-model phi3:mini
 | --- | --- | --- |
 | **Ollama (Local)** | `phi3:mini`, `llama3:8b` | Fast, free, and runs on your machine. Great for privacy. |
 | **OpenAI** | `gpt-4o-mini` | Excellent balance of cost, speed, and intelligence. |
-| **Google Gemini** | `gemini-1.5-flash-001` | Fast and cost-effective model from Google. |
+| **Google Gemini** | `gemini-1.5-flash` | Fast and cost-effective model from Google. |
 | **Groq** | `llama3-8b-8192` | Incredibly fast inference speeds. |
 
 ---
