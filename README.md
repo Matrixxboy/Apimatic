@@ -15,7 +15,7 @@
 </a>
 
 
-A tool to **automatically generate beautiful and comprehensive API documentation** (Markdown/OpenAPI) from your source code.  
+A tool to **automatically generate beautiful and comprehensive API documentation** (Markdown) from your source code.  
 Supports **Flask, FastAPI, and more frameworks** with optional **AI-powered enhancements via Ollama, OpenAI, Google Gemini, and Groq**.  
 
 ---
