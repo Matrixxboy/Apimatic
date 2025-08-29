@@ -4,49 +4,77 @@ import os
 from typing import Dict, List
 from pathlib import Path
 import google.generativeai as genai
-import google.ai.generativelanguage as glm # for the API response objects
+import google.ai.generativelanguage as glm
+import re
 
 API_FILE = Path.home() / ".gemini_api_key"
 DEFAULT_MODEL = "gemini-1.5-flash"
 
 SYSTEM_PROMPT = """
-You are an expert software engineer and senior technical writer. Your task is to analyze the source code for a single API endpoint and generate a documentation object in JSON format.
+You are an expert software engineer and senior technical writer. Your task is to analyze the provided source code for a single API endpoint and generate a JSON object that accurately documents its functionality, parameters, and request body.
 
-### STRICT RULES (VERY IMPORTANT)
+Your response MUST be a valid JSON object that strictly adheres to the following schema. DO NOT include any additional text or markdown outside of the JSON block.
 
-1.  **Analyze, Don't Speculate:** Base your output *only* on the provided source code. Do not invent or assume functionality that isn't explicitly present.
-2.  **Accurate Parameter Detection:**
-    *   **Path Parameters:** Identify variables embedded in the URL path (e.g., `/users/{user_id}`).
-    *   **Query Parameters:** Identify parameters read from the URL query string (e.g., `request.args` in Flask, or FastAPI function arguments that are not part of the path).
-    *   **Request Body:** Identify data read from the request body (e.g., from a Pydantic model or `request.json`).
-3.  **JSON Output Only:** Return *only* a single, valid JSON object. Do not include any other text, markdown, or explanations outside of the JSON structure.
-4.  **Field Correctness:**
-    *   If there are no query parameters, the `query_params` field must be an empty array (`[]`).
-    *   If there is no request body, the `request_body` field must be `{"description": "None.", "schema": {}}`.
+Schema:
+```json
+{
+ "type": "object",
+ "properties": {
+   "logic_explanation": {
+     "type": "string",
+     "description": "Provide a clear, concise, and detailed explanation of the endpoint’s business logic, including the request flow, middleware involvement, and final response handling."
+   },
+   "query_params": {
+     "type": "array",
+     "description": "An array of objects documenting each query parameter.",
+     "items": {
+       "type": "object",
+       "properties": {
+         "name": {"type": "string"},
+         "description": {"type": "string", "description": "Brief description of the parameter's purpose."},
+         "type": {"type": "string", "enum": ["string", "integer", "number", "boolean", "array", "object"]}
+       },
+       "required": ["name", "description", "type"]
+     }
+   }
+,
+   "request_body": {
+     "type": "object",
+     "description": "An object describing the request body, if any.",
+     "properties": {
+       "description": {"type": "string", "description": "A high-level description of the request body's purpose."},
+       "schema": {
+         "type": "object",
+         "description": "A JSON schema representation of the request body payload."
+       }
+     },
+     "required": ["description", "schema"]
+   }
+ },
+ "required": ["logic_explanation", "query_params", "request_body"]
+}
+```
 
-### OUTPUT STRUCTURE
-
-Your JSON output must have the following keys:
-
-1.  `"logic_explanation"`: **(High-Quality Explanation)**
-    *   Provide a concise, step-by-step summary of the endpoint's business logic.
-    *   Focus on the **"how" and "why"**: What is the endpoint's purpose? How does it achieve it?
-    *   Explain the data flow: Where does data come from (e.g., database, external API)? How is it processed or transformed?
-    *   Mention any key validation, error handling, or security measures.
-    *   Write in clear, active voice. Aim for 4-6 impactful sentences.
-
-2.  `"query_params"`: An array of objects, where each object represents a query parameter and has the keys: `name`, `type`, and `description`.
-
-3.  `"request_body"`: An object describing the JSON request body, containing the keys: `description` and `schema`.
-
-### FINAL REQUIREMENT
-
-- Return ONLY a single valid JSON object with the keys: `"logic_explanation"`, `"query_params"`, and `"request_body"`.
+Example Output:
+```json
+{
+ "logic_explanation": "The endpoint retrieves a user's profile by their unique ID. It first validates the 'id' path parameter, then queries the database for the user record. If the user is not found, it returns a 404 error. Otherwise, it returns the user's data.",
+ "query_params": [
+   {
+     "name": "include_email",
+     "description": "Specifies whether to include the user's email address in the response.",
+     "type": "boolean"
+   }
+ ],
+ "request_body": {
+   "description": "None.",
+   "schema": {}
+ }
+}
+```
 """
 
-# -------- API KEY HANDLING --------
 def get_api_key() -> str:
-    """Retrieve stored Gemini API key, ask if missing."""
     if API_FILE.exists():
         return API_FILE.read_text().strip()
     else:
@@ -55,34 +83,71 @@ def get_api_key() -> str:
         return api_key
 
 def update_api_key(new_key: str) -> None:
-    """Update stored API key."""
     API_FILE.write_text(new_key.strip())
     print("✅ API key updated successfully.")
 
-# -------- MAIN FUNCTION --------
+REQUIRED_KEYS = {"logic_explanation", "query_params", "request_body"}
+
+def validate_response(api_details: dict) -> dict:
+    if not isinstance(api_details, dict):
+        return {
+            "logic_explanation": "_Invalid AI response type._",
+            "query_params": [],
+            "request_body": {"description": "None.", "schema": {}},
+        }
+
+    validated = {}
+    validated["logic_explanation"] = api_details.get("logic_explanation", "")
+
+    query_params = api_details.get("query_params", [])
+    if isinstance(query_params, list):
+        validated_params = []
+        for param in query_params:
+            if isinstance(param, dict) and "name" in param and "description" in param and "type" in param:
+                validated_params.append(param)
+        validated["query_params"] = validated_params
+    else:
+        validated["query_params"] = []
+
+    request_body = api_details.get("request_body", {})
+    if isinstance(request_body, dict):
+        validated["request_body"] = {
+            "description": request_body.get("description", "None."),
+            "schema": request_body.get("schema", {}),
+        }
+    else:
+        validated["request_body"] = {"description": "None.", "schema": {}}
+
+    return validated
+
 def enhance_with_gemini(endpoints: List[Dict], model_name: str = DEFAULT_MODEL) -> List[Dict]:
-    """Enhances each endpoint with an AI-generated explanation using Gemini API."""
     api_key = get_api_key()
     if not api_key:
         raise ValueError("Gemini API key not found. Please set it using 'apimatic config --set-gemini-key YOUR_KEY'")
 
     genai.configure(api_key=api_key)
-   
-    model = genai.GenerativeModel(model_name)
+    
+    model = genai.GenerativeModel(model_name, system_instruction=SYSTEM_PROMPT)
 
     for i, endpoint in enumerate(endpoints):
         source = endpoint.get("source")
+        meta = f"[{endpoint.get('method','?')}] {endpoint.get('path','?')}"
+        print(f"\n🔍 Analyzing {meta}... ({i+1}/{len(endpoints)})")
+
         if not source:
             endpoint["ai_details"] = {
-                "logic_explanation": "_No source code found to generate a description._",
+                "logic_explanation": "_No source code found._",
                 "query_params": [],
-                "request_body": {},
+                "request_body": {"description": "None.", "schema": {}},
             }
             continue
 
-        print(f"🔍 Analyzing {endpoint.get('summary', 'endpoint')}... ({i+1}/{len(endpoints)})")
+        user_prompt = f"""
+Analyze the following API endpoint code to generate documentation based on the schema provided in your system prompt.
 
-        user_prompt = f"{SYSTEM_PROMPT}\n\nHere is the API endpoint source code:\n\n{source}"
+Endpoint Source Code:
+{source}
+"""
 
         try:
             response = model.generate_content(
@@ -92,23 +157,31 @@ def enhance_with_gemini(endpoints: List[Dict], model_name: str = DEFAULT_MODEL) 
                     temperature=0,
                 )
             )
+            
+            raw = response.text.strip()
+            
+            # Remove potential markdown code block wrappers
+            if raw.startswith("```json"):
+                raw = raw.strip("`").strip("json").strip()
+            
+            # Use regex to find and extract the JSON object
+            match = re.search(r'\{.*\}', raw, re.DOTALL)
+            if match:
+                raw = match.group(0)
+            
+            # Clean up potential trailing commas before parsing
+            cleaned_raw = re.sub(r',(\s*[\}\]])', r'\1', raw)
 
-            api_details = json.loads(response.text)
-
-            endpoint["ai_details"] = {
-                "logic_explanation": api_details.get("logic_explanation", ""),
-                "query_params": api_details.get("query_params", []),
-                "request_body": api_details.get("request_body", {}),
-            }
+            api_details = json.loads(cleaned_raw)
+            endpoint["ai_details"] = validate_response(api_details)
 
         except Exception as e:
-            print(f"❌ Error analyzing {endpoint.get('summary')}: {e}")
+            print(f"❌ Error analyzing {meta}: {e}")
             endpoint["ai_details"] = {
                 "logic_explanation": f"_Gemini analysis failed: {e}_",
                 "query_params": [],
-                "request_body": {},
+                "request_body": {"description": "None.", "schema": {}},
             }
-            continue
 
-    print("✅ AI analysis complete.")
+    print("\n✅ AI analysis complete.")
     return endpoints

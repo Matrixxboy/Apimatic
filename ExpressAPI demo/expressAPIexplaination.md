@@ -4,7 +4,7 @@
 
 ### `POST /api/users`
 - **Endpoint:** `POST /api/users`
-- **Source File:** `demo-express-api.js`
+- **Source File:** `expressAPIdemo.js`
 - **Logic Explanation:**
   - The endpoint creates a new user with the provided name and email. It first validates the request body for the presence of both 'name' and 'email'. If either is missing, it returns a 400 error. If the request is valid, it creates a new user object and returns it with a 201 status code.
 - **Handlers:**
@@ -53,7 +53,7 @@
 
 ### `DELETE /api/users/:id`
 - **Endpoint:** `DELETE /api/users/:id`
-- **Source File:** `demo-express-api.js`
+- **Source File:** `expressAPIdemo.js`
 - **Logic Explanation:**
   - The endpoint checks for authentication and validates the user ID. If the ID is valid, it returns a success message. If the ID is invalid or authentication fails, it returns an error.
 - **Handlers:**
@@ -101,7 +101,7 @@ app.use((err, req, res, next) => {
 
 ### `GET /api/users/:id`
 - **Endpoint:** `GET /api/users/:id`
-- **Source File:** `demo-express-api.js`
+- **Source File:** `expressAPIdemo.js`
 - **Logic Explanation:**
   - The endpoint retrieves a user's data by their unique ID. It first validates the 'id' path parameter, then queries the database for the user record. If the user is not found, it returns a 400 error. Otherwise, it returns the user's data. The endpoint also supports query parameters to include the user's posts. If the 'includePosts' query parameter is set to 'true', the user's posts are included in the response.
 - **Handlers:**
@@ -202,7 +202,7 @@ app.use((err, req, res, next) => {
 
 ### `PUT /api/users/:id`
 - **Endpoint:** `PUT /api/users/:id`
-- **Source File:** `demo-express-api.js`
+- **Source File:** `expressAPIdemo.js`
 - **Logic Explanation:**
   - The endpoint handles user profile updates. It first checks for a valid authorization token. If the token is invalid, it returns a 401 Unauthorized response. Then, it validates the 'id' path parameter to ensure it's a number. If the 'id' is invalid, it returns a 400 Bad Request response. If the 'id' is valid, it updates the user's profile with the provided 'name' and 'email' in the request body and returns a 200 OK response.
 - **Handlers:**

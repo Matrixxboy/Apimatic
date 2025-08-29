@@ -1,73 +1,128 @@
-# ollama.py
 from __future__ import annotations
 import json
 import urllib.request
 from typing import Dict, List
 
 SYSTEM_PROMPT = """
-You are an expert software engineer and senior technical writer. Analyze a single API endpoint's source code and return an exhaustive documentation object.
+You are an expert software engineer and senior technical writer. Your task is to analyze the provided source code for a single API endpoint and generate a JSON object that accurately documents its functionality, parameters, and request body.
 
-STRICT RULES (very important):
-- DO NOT speculate or invent fields. If something is not present in the code, leave it out.
-- Distinguish PARAMETER KINDS correctly:
-  • Path params: variables embedded in the URL path (e.g., /users/{user_id} in FastAPI, or /users/<int:user_id> in Flask). NEVER include these in "query_params".
-  • Query params: only include if they are clearly read from query (e.g., FastAPI function params not in the path and/or declared with fastapi.Query; Flask usage of request.args[...] or request.args.get).
-  • Request body: only include if the handler takes a Pydantic model/TypedDict/dataclass parameter OR reads request.json/request.get_json()/await request.json() etc.
-- If there are NO query params, return an empty list for "query_params".
-- If there is NO request body, return: "request_body": { "description": "None.", "schema": {} }.
-- Keep types to: string, integer, number, boolean, object, array.
-- Return ONLY a single JSON object with EXACTLY these keys: "logic_explanation", "query_params", "request_body". No markdown, no extra keys, no prose.
+Your response MUST be a valid JSON object that strictly adheres to the following schema. DO NOT include any additional text or markdown outside of the JSON block.
 
-OUTPUT FIELDS TO PRODUCE:
-1) "logic_explanation": A step-by-step explanation (4–8 lines) of the code’s control flow, purpose of variables, and any error handling/edge cases. Base this ONLY on what the code actually does.
-2) "query_params": An array of objects for ALL query parameters actually used/declared.
-   Each item: name :"<paramName>", "description": "<what it does>", "type": "<string|integer|number|boolean|object|array>" }
-   IMPORTANT: Do NOT include path params here.
-3) "request_body": An object describing the JSON body if present.
-   {
-     "description": "<what the request body represents>",
-     "schema": {
+Schema:
+```json
+{
+ "type": "object",
+ "properties": {
+   "logic_explanation": {
+     "type": "string",
+     "description": "Provide a clear, concise, and detailed explanation of the endpoint’s business logic, including the request flow, middleware involvement, and final response handling."
+   },
+   "query_params": {
+     "type": "array",
+     "description": "An array of objects documenting each query parameter.",
+     "items": {
        "type": "object",
-       "required": ["fieldA", ...],   // omit or use [] if none
        "properties": {
-         "fieldA": { "type": "string", "description": "...", "nullable": false },
-         "fieldB": { "type": "integer", "description": "...", "nullable": true }
-       }
+         "name": {"type": "string"},
+         "description": {"type": "string", "description": "Brief description of the parameter's purpose."},
+         "type": {"type": "string", "enum": ["string", "integer", "number", "boolean", "array", "object"]}
+       },
+       "required": ["name", "description", "type"]
      }
    }
-   - If body is a Pydantic model, infer required vs optional from field defaults/Optional[].
-   - If constraints are visible (e.g., min_length, regex), include them.
-   - If no body is used, respond with: { "description": "None.", "schema": {} }.
+,
+   "request_body": {
+     "type": "object",
+     "description": "An object describing the request body, if any.",
+     "properties": {
+       "description": {"type": "string", "description": "A high-level description of the request body's purpose."},
+       "schema": {
+         "type": "object",
+         "description": "A JSON schema representation of the request body payload."
+       }
+     },
+     "required": ["description", "schema"]
+   }
+ },
+ "required": ["logic_explanation", "query_params", "request_body"]
+}
+```
 
-FRAMEWORK-SPECIFIC GUIDANCE:
-- FastAPI:
-  • Path params are those in the route path (e.g., @app.get("/users/{user_id}")) and matching function parameters. Do NOT list them as query params.
-  • Query params are function parameters NOT in the path and commonly with defaults or fastapi.Query(...) declarations.
-  • Request body usually appears as a Pydantic model parameter without a default (e.g., def create_user(user: User): ...).
-- Flask:
-  • Path params are in route patterns like /users/<int:user_id>.
-  • Query params are accessed via request.args.
-  • Request body is accessed via request.json or request.get_json().
-
-FINAL REQUIREMENT:
-- Return ONLY a single valid JSON object with keys: "logic_explanation", "query_params", "request_body".
-
+Example Output:
+```json
+{
+ "logic_explanation": "The endpoint retrieves a user's profile by their unique ID. It first validates the 'id' path parameter, then queries the database for the user record. If the user is not found, it returns a 404 error. Otherwise, it returns the user's data.",
+ "query_params": [
+   {
+     "name": "include_email",
+     "description": "Specifies whether to include the user's email address in the response.",
+     "type": "boolean"
+   }
+ ],
+ "request_body": {
+   "description": "None.",
+   "schema": {}
+ }
+}
+```
 """
+
+REQUIRED_KEYS = {"logic_explanation", "query_params", "request_body"}
+
+def validate_response(api_details: dict) -> dict:
+    """Ensure AI response matches expected schema with safe defaults."""
+    if not isinstance(api_details, dict):
+        return {
+            "logic_explanation": "_Invalid AI response type._",
+            "query_params": [],
+            "request_body": {"description": "None.", "schema": {}},
+        }
+
+    validated = {}
+    validated["logic_explanation"] = api_details.get("logic_explanation", "")
+
+    query_params = api_details.get("query_params", [])
+    if isinstance(query_params, list):
+        validated_params = []
+        for param in query_params:
+            if isinstance(param, dict) and "name" in param and "description" in param and "type" in param:
+                validated_params.append(param)
+        validated["query_params"] = validated_params
+    else:
+        validated["query_params"] = []
+
+    request_body = api_details.get("request_body", {})
+    if isinstance(request_body, dict):
+        validated["request_body"] = {
+            "description": request_body.get("description", "None."),
+            "schema": request_body.get("schema", {}),
+        }
+    else:
+        validated["request_body"] = {"description": "None.", "schema": {}}
+
+    return validated
 
 def enhance_with_ollama(endpoints: List[Dict], model: str = "llama3:instruct") -> List[Dict]:
     """Enhances each endpoint with an AI-generated explanation using the Ollama REST API."""
     for i, endpoint in enumerate(endpoints):
         source = endpoint.get("source")
+        meta = f"[{endpoint.get('method','?')}] {endpoint.get('path','?')}"
+        print(f"\n🔍 Analyzing {meta}... ({i+1}/{len(endpoints)})")
+
         if not source:
-            # Assign empty lists and dicts to new keys for consistency
-            endpoint["description"] = "_No source code found to generate a description._"
-            endpoint["query_params"] = []
-            endpoint["request_body"] = {}
+            endpoint["ai_details"] = {
+                "logic_explanation": "_No source code found._",
+                "query_params": [],
+                "request_body": {"description": "None.", "schema": {}},
+            }
             continue
 
-        print(f"Analyzing {endpoint.get('summary', 'endpoint')}... ({i+1}/{len(endpoints)})")
+        user_prompt = f"""
+Analyze the following API endpoint code to generate documentation based on the schema provided in your system prompt.
 
-        user_prompt = f"Here is the API endpoint source code:\n\n{source}"
+Endpoint Source Code:
+{source}
+"""
 
         payload = {
             "model": model,
@@ -88,36 +143,23 @@ def enhance_with_ollama(endpoints: List[Dict], model: str = "llama3:instruct") -
             with urllib.request.urlopen(req) as response:
                 if response.status == 200:
                     response_text = response.read().decode("utf-8")
-                    # The response from Ollama's /api/generate is a single-line JSON string
-                    # that contains the 'response' key, which itself holds the JSON string
-                    # from the model. We need to parse it twice.
                     outer_json = json.loads(response_text)
                     api_details_str = outer_json.get("response", "{}")
                     api_details = json.loads(api_details_str)
-                    
-                    # Store the structured details under a single 'ai_details' key
-                    # This prevents mixing logic explanation with other data fields
-                    endpoint["ai_details"] = {
-                        "logic_explanation": api_details.get("logic_explanation", ""),
-                        "query_params": api_details.get("query_params", []),
-                        "request_body": api_details.get("request_body", {}),
-                    }
-                    
+                    endpoint["ai_details"] = validate_response(api_details)
                 else:
                     raise RuntimeError(f"API request failed with status {response.status}: {response.read().decode('utf-8')}")
 
         except Exception as e:
-            print(f"\nAn error occurred while analyzing {endpoint.get('summary')}.")
-            print(f"   Error: {e}")
+            print(f"❌ Error analyzing {meta}: {e}")
             endpoint["ai_details"] = {
                 "logic_explanation": f"_Ollama analysis failed: {e}_",
                 "query_params": [],
-                "request_body": {},
+                "request_body": {"description": "None.", "schema": {}},
             }
             if isinstance(e, (urllib.error.URLError, ConnectionRefusedError)):
                 print("   Could not connect to Ollama. Aborting analysis.")
                 return endpoints
-            continue
 
-    print("✅ AI analysis complete.")
+    print("\n✅ AI analysis complete.")
     return endpoints

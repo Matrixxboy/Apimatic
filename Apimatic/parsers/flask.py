@@ -32,6 +32,7 @@ def parse_flask_routes(src: Path) -> List[Dict]:
                             methods = [el.value for el in keyword.value.elts if isinstance(el, ast.Constant)]
 
                     source_code = ast.get_source_segment(text, node)
+                    handlers = [source_code]
 
                     for method in methods:
                         endpoints.append({
@@ -39,10 +40,12 @@ def parse_flask_routes(src: Path) -> List[Dict]:
                             "file": str(file.relative_to(src)),
                             "method": method.upper(),
                             "path": path,
-                            "source": source_code,
+                            "handlers": handlers,
+                            "source": "\n\n".join(handlers),
                             "summary": f"{method.upper()} {path}"
                         })
         except (SyntaxError, UnicodeDecodeError):
             continue
             
     return endpoints
+

@@ -49,7 +49,7 @@ def parse_django_routes(src: Path) -> List[Dict]:
     are in the same directory.
     """
     endpoints: List[Dict] = []
-    for urls_file in iter_files(src, exts=(".py",)):
+    for urls_file in iter_files(src, exts= (".py",)):
         views_file = urls_file.parent / "views.py"
         try:
             text = urls_file.read_text(encoding="utf-8", errors="ignore")
@@ -65,13 +65,15 @@ def parse_django_routes(src: Path) -> List[Dict]:
                 continue
 
             methods = get_methods_from_class_source(source)
+            handlers = [source]
             for method in methods:
                 endpoints.append({
                     "framework": "django",
                     "file": str(views_file.relative_to(src)),
                     "method": method,
                     "path": "/" + path.strip("/"),
-                    "source": source,
+                    "handlers": handlers,
+                    "source": "\n\n".join(handlers),
                     "summary": f"{method} /{path.strip('/')}"
                 })
 

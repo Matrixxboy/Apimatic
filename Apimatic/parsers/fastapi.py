@@ -33,13 +33,15 @@ def parse_fastapi_routes(src: Path) -> List[Dict]:
                         
                         # Extract the source code for the decorated function
                         source_code = ast.get_source_segment(text, node)
+                        handlers = [source_code]
 
                         endpoints.append({
                             "framework": "fastapi",
                             "file": str(file.relative_to(src)),
                             "method": method,
                             "path": path,
-                            "source": source_code,
+                            "handlers": handlers,
+                            "source": "\n\n".join(handlers),
                             "summary": f"{method} {path}"
                         })
         except (SyntaxError, UnicodeDecodeError):
