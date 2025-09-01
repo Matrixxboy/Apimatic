@@ -4,7 +4,7 @@
 [![PyPI version](https://badge.fury.io/py/Apimatic.svg)](https://pypi.org/project/Apimatic/)
 [![Downloads](https://static.pepy.tech/badge/Apimatic)](https://pepy.tech/project/Apimatic)
 [![Python Version](https://img.shields.io/badge/python-%3E%3D3.9-blue)](https://pypi.org/project/Apimatic/)
-[![License](https://img.shields.io/pypi/l/Apimatic.svg)](https://github.com/Matrixxboy/Apimatic/blob/main/LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-circle)](LICENSE)
 <!-- PyPI Card -->
 <a href="https://pypi.org/project/Apimatic/" target="_blank">
   <img src="https://img.shields.io/pypi/v/Apimatic?color=3775A9&logo=python&label=Apimatic&style=for-the-badge" alt="pypi version" />
